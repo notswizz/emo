@@ -1,3 +1,5 @@
+console.log("Script loaded!");
+
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://bmwakvshdrvwvrtwmyzc.supabase.co';
