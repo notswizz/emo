@@ -26,6 +26,48 @@ const inspectBtn = document.getElementById('inspectBtn');
 const buyBtn = document.getElementById('buyBtn');
 const selectedTileElement = document.getElementById('selectedTile');
 
+// Function to update emoji's bought status in Firestore
+async function markEmojiAsBought(emojiId) {
+    const emojiRef = doc(db, "emojis", emojiId);
+    await updateDoc(emojiRef, { bought: true });
+}
+
+// Function to update emoji's inspected status in Firestore
+async function markEmojiAsInspected(emojiId) {
+    const emojiRef = doc(db, "emojis", emojiId);
+    await updateDoc(emojiRef, { inspected: true });
+}
+
+// Create grid
+for (let i = 0; i < gridSize; i++) {
+    for (let j = 0; j < gridSize; j++) {
+        const gridItem = document.createElement('div');
+        gridItem.classList.add('grid-item');
+        gridItem.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+        gridItem.dataset.row = i;
+        gridItem.dataset.col = j;
+        const emojiId = `${i}-${j}`;
+        gridItem.dataset.id = emojiId;
+
+        // Check if the emoji was inspected or bought and set the background color accordingly
+        const emojiRef = doc(db, "emojis", emojiId);
+        const emojiSnapshot = await getDoc(emojiRef);
+
+        if (emojiSnapshot.exists()) {
+            const emojiData = emojiSnapshot.data();
+            if (emojiData.bought) {
+                gridItem.style.backgroundColor = 'green';
+            } else if (emojiData.inspected) {
+                gridItem.style.backgroundColor = 'red';
+            }
+        }
+
+        gridItem.addEventListener('click', handleClick);
+        gridContainer.appendChild(gridItem);
+    }
+}
+        
+
 function handleClick(event) {
     const emoji = event.target;
 
@@ -40,10 +82,6 @@ function handleClick(event) {
     selectedEmoji = emoji;
     selectedEmoji.style.backgroundColor = 'orange';
     updateSelectedTileText(selectedEmoji.dataset.id);
-}
-
-function updateSelectedTileText(tileId) {
-    selectedTileElement.textContent = `${tileId}`;
 }
 
 function handleInspect() {
@@ -98,95 +136,6 @@ function handleKeyDown(event) {
     }
 }
 
-function saveInspectedEmoji(emojiId) {
-    let inspectedEmojis = JSON.parse(localStorage.getItem('inspectedEmojis')) || [];
-    if (!inspectedEmojis.includes(emojiId)) {
-        inspectedEmojis.push(emojiId);
-        localStorage.setItem('inspectedEmojis', JSON.stringify(inspectedEmojis));
-    }
-}
-
-function saveBoughtEmoji(emojiId) {
-    let boughtEmojis = JSON.parse(localStorage.getItem('boughtEmojis')) || [];
-    if (!boughtEmojis.includes(emojiId)) {
-        boughtEmojis.push(emojiId);
-        localStorage.setItem('boughtEmojis', JSON.stringify(boughtEmojis));
-    }
-}
-
-function isEmojiInspected(emojiId) {
-    let inspectedEmojis = JSON.parse(localStorage.getItem('inspectedEmojis')) || [];
-    return inspectedEmojis.includes(emojiId);
-}
-
-function isEmojiBought(emojiId) {
-    let boughtEmojis = JSON.parse(localStorage.getItem('boughtEmojis')) || [];
-    return boughtEmojis.includes(emojiId);
-}
-
-// Function to update emoji's bought status in Firestore
-async function markEmojiAsBought(emojiId) {
-    const emojiRef = doc(db, "emojis", emojiId);
-    await updateDoc(emojiRef, { bought: true });
-}
-
-// Function to update emoji's inspected status in Firestore
-async function markEmojiAsInspected(emojiId) {
-    const emojiRef = doc(db, "emojis", emojiId);
-    await updateDoc(emojiRef, { inspected: true });
-}
-
-// Create grid
-for (let i = 0; i < gridSize; i++) {
-    for (let j = 0; j < gridSize; j++) {
-        const gridItem = document.createElement('div');
-        gridItem.classList.add('grid-item');
-        gridItem.innerText = emojis[Math.floor(Math.random() * emojis.length)];
-        gridItem.dataset.row = i;
-        gridItem.dataset.col = j;
-        const emojiId = `${i}-${j}`;
-        gridItem.dataset.id = emojiId;
-
-        // Check if the emoji was inspected or bought and set the background color accordingly
-        const emojiRef = doc(db, "emojis", emojiId);
-        const emojiSnapshot = await getDoc(emojiRef);
-
-        if (emojiSnapshot.exists()) {
-            const emojiData = emojiSnapshot.data();
-            if (emojiData.bought) {
-                gridItem.style.backgroundColor = 'green';
-            } else if (emojiData.inspected) {
-                gridItem.style.backgroundColor = 'red';
-            }
-        }
-
-        gridItem.addEventListener('click', handleClick);
-        gridContainer.appendChild(gridItem);
-    }
-}
-
-// Create grid
-for (let i = 0; i < gridSize; i++) {
-    for (let j = 0; j < gridSize; j++) {
-        const gridItem = document.createElement('div');
-        gridItem.classList.add('grid-item');
-        gridItem.innerText = emojis[Math.floor(Math.random() * emojis.length)];
-        gridItem.dataset.row = i;
-        gridItem.dataset.col = j;
-        gridItem.dataset.id = `${i}-${j}`;
-
-        // Check if the emoji was inspected or bought and set the background color accordingly
-        if (isEmojiInspected(gridItem.dataset.id)) {
-            gridItem.style.backgroundColor = 'red';
-        } else if (isEmojiBought(gridItem.dataset.id)) {
-            gridItem.style.backgroundColor = 'green';
-        }
-
-        gridItem.addEventListener('click', handleClick);
-        gridContainer.appendChild(gridItem);
-    }
-}
-
 inspectBtn.addEventListener('click', async () => {
     if (selectedEmoji) {
         selectedEmoji.style.backgroundColor = 'red';
@@ -202,9 +151,3 @@ buyBtn.addEventListener('click', async () => {
         location.reload(); // Reload the page
     }
 });
-
-
-inspectBtn.addEventListener('click', handleInspect);
-buyBtn.addEventListener('click', handleBuy);
-window.addEventListener('keydown', handleKeyDown);
-
