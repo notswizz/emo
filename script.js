@@ -1,3 +1,9 @@
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = 'https://bmwakvshdrvwvrtwmyzc.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtd2FrdnNoZHJ2d3ZydHdteXpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTIzNzIwMjksImV4cCI6MjAwNzk0ODAyOX0.DrhLWSMvVPkVkl9MWlMewNkDcox6gu4_tWzP6BrC8pA';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 const emojis = ['💧'];
 const gridSize = 10;
 let selectedEmoji = null;
@@ -7,126 +13,90 @@ const inspectBtn = document.getElementById('inspectBtn');
 const buyBtn = document.getElementById('buyBtn');
 const selectedTileElement = document.getElementById('selectedTile');
 
+async function fetchEmojis() {
+  try {
+    const { data: emojisData, error } = await supabase
+      .from('emojis')
+      .select('*');
+
+    if (error) {
+      console.error('Error fetching emojis:', error);
+      return;
+    }
+
+    // Create grid based on fetched emoji data
+    createGrid(emojisData);
+  } catch (error) {
+    console.error('Error fetching emojis:', error);
+  }
+}
+
+function createGrid(emojisData) {
+  for (let i = 0; i < gridSize; i++) {
+    for (let j = 0; j < gridSize; j++) {
+      const emojiData = emojisData.find(data => data.row === i && data.col === j);
+      const gridItem = document.createElement('div');
+      gridItem.classList.add('grid-item');
+      gridItem.innerText = emojiData ? emojiData.emoji : emojis[Math.floor(Math.random() * emojis.length)];
+      gridItem.dataset.row = i;
+      gridItem.dataset.col = j;
+      gridItem.dataset.id = emojiData ? emojiData.id : `${i}-${j}`;
+
+      // Check if the emoji was inspected or bought and set the background color accordingly
+      if (emojiData && emojiData.inspected) {
+        gridItem.style.backgroundColor = 'red';
+      } else if (emojiData && emojiData.bought) {
+        gridItem.style.backgroundColor = 'green';
+      }
+
+      gridItem.addEventListener('click', handleClick);
+      gridContainer.appendChild(gridItem);
+    }
+  }
+}
+
+async function updateEmojiState(emojiId, newState) {
+  try {
+    await supabase
+      .from('emojis')
+      .update({ [newState]: true })
+      .eq('id', emojiId);
+  } catch (error) {
+    console.error('Error updating emoji state:', error);
+  }
+}
+
 function handleClick(event) {
-    const emoji = event.target;
+  const emoji = event.target;
 
-    if (isEmojiInspected(emoji.dataset.id) || isEmojiBought(emoji.dataset.id)) {
-        return; // Prevent clicking on inspected or bought emojis
-    }
+  if (selectedEmoji) {
+    selectedEmoji.style.backgroundColor = '';
+  }
 
-    if (selectedEmoji) {
-        selectedEmoji.style.backgroundColor = '';
-    }
-
-    selectedEmoji = emoji;
-    selectedEmoji.style.backgroundColor = 'orange';
-    updateSelectedTileText(selectedEmoji.dataset.id);
+  selectedEmoji = emoji;
+  selectedEmoji.style.backgroundColor = 'orange';
+  updateSelectedTileText(selectedEmoji.dataset.id);
 }
 
 function updateSelectedTileText(tileId) {
-    selectedTileElement.textContent = `${tileId}`;
+  selectedTileElement.textContent = `${tileId}`;
 }
 
-function handleInspect() {
-    if (selectedEmoji) {
-        selectedEmoji.style.backgroundColor = 'red';
-        saveInspectedEmoji(selectedEmoji.dataset.id);
-        location.reload(); // Reload the page
-    }
-}
+inspectBtn.addEventListener('click', async () => {
+  if (selectedEmoji) {
+    selectedEmoji.style.backgroundColor = 'red';
+    await updateEmojiState(selectedEmoji.dataset.id, 'inspected');
+  }
+});
 
-function handleBuy() {
-    if (selectedEmoji) {
-        selectedEmoji.style.backgroundColor = 'green';
-        saveBoughtEmoji(selectedEmoji.dataset.id);
-        location.reload(); // Reload the page
-    }
-}
+buyBtn.addEventListener('click', async () => {
+  if (selectedEmoji) {
+    selectedEmoji.style.backgroundColor = 'green';
+    await updateEmojiState(selectedEmoji.dataset.id, 'bought');
+  }
+});
 
-function handleKeyDown(event) {
-    if (!selectedEmoji) return;
-
-    const currentRow = parseInt(selectedEmoji.dataset.row);
-    const currentCol = parseInt(selectedEmoji.dataset.col);
-
-    let newRow = currentRow;
-    let newCol = currentCol;
-
-    switch (event.key) {
-        case 'w':
-            newRow = Math.max(0, currentRow - 1);
-            break;
-        case 's':
-            newRow = Math.min(gridSize - 1, currentRow + 1);
-            break;
-        case 'a':
-            newCol = Math.max(0, currentCol - 1);
-            break;
-        case 'd':
-            newCol = Math.min(gridSize - 1, currentCol + 1);
-            break;
-        default:
-            return;
-    }
-
-    const nextEmoji = document.querySelector(`[data-row="${newRow}"][data-col="${newCol}"]`);
-
-    if (nextEmoji && !(isEmojiInspected(nextEmoji.dataset.id) || isEmojiBought(nextEmoji.dataset.id))) {
-        selectedEmoji.style.backgroundColor = '';
-        selectedEmoji = nextEmoji;
-        selectedEmoji.style.backgroundColor = 'orange';
-        updateSelectedTileText(selectedEmoji.dataset.id);
-    }
-}
-
-function saveInspectedEmoji(emojiId) {
-    let inspectedEmojis = JSON.parse(localStorage.getItem('inspectedEmojis')) || [];
-    if (!inspectedEmojis.includes(emojiId)) {
-        inspectedEmojis.push(emojiId);
-        localStorage.setItem('inspectedEmojis', JSON.stringify(inspectedEmojis));
-    }
-}
-
-function saveBoughtEmoji(emojiId) {
-    let boughtEmojis = JSON.parse(localStorage.getItem('boughtEmojis')) || [];
-    if (!boughtEmojis.includes(emojiId)) {
-        boughtEmojis.push(emojiId);
-        localStorage.setItem('boughtEmojis', JSON.stringify(boughtEmojis));
-    }
-}
-
-function isEmojiInspected(emojiId) {
-    let inspectedEmojis = JSON.parse(localStorage.getItem('inspectedEmojis')) || [];
-    return inspectedEmojis.includes(emojiId);
-}
-
-function isEmojiBought(emojiId) {
-    let boughtEmojis = JSON.parse(localStorage.getItem('boughtEmojis')) || [];
-    return boughtEmojis.includes(emojiId);
-}
-
-// Create grid
-for (let i = 0; i < gridSize; i++) {
-    for (let j = 0; j < gridSize; j++) {
-        const gridItem = document.createElement('div');
-        gridItem.classList.add('grid-item');
-        gridItem.innerText = emojis[Math.floor(Math.random() * emojis.length)];
-        gridItem.dataset.row = i;
-        gridItem.dataset.col = j;
-        gridItem.dataset.id = `${i}-${j}`;
-
-        // Check if the emoji was inspected or bought and set the background color accordingly
-        if (isEmojiInspected(gridItem.dataset.id)) {
-            gridItem.style.backgroundColor = 'red';
-        } else if (isEmojiBought(gridItem.dataset.id)) {
-            gridItem.style.backgroundColor = 'green';
-        }
-
-        gridItem.addEventListener('click', handleClick);
-        gridContainer.appendChild(gridItem);
-    }
-}
-
-inspectBtn.addEventListener('click', handleInspect);
-buyBtn.addEventListener('click', handleBuy);
 window.addEventListener('keydown', handleKeyDown);
+
+// Fetch emojis when the page loads
+fetchEmojis();
