@@ -4,8 +4,8 @@ const supabaseUrl = 'https://bmwakvshdrvwvrtwmyzc.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtd2FrdnNoZHJ2d3ZydHdteXpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTIzNzIwMjksImV4cCI6MjAwNzk0ODAyOX0.DrhLWSMvVPkVkl9MWlMewNkDcox6gu4_tWzP6BrC8pA';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const emojis = ['💧'];
 const gridSize = 10;
+const emojis = ['💧'];
 
 async function fetchEmojis() {
     try {
@@ -33,7 +33,6 @@ function createGrid(emojisData) {
             const gridItem = document.createElement('div');
             gridItem.classList.add('grid-item');
             gridItem.innerText = emojiData ? emojiData.emoji : emojis[Math.floor(Math.random() * emojis.length)];
-
             gridContainer.appendChild(gridItem);
         }
     }
