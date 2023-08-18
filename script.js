@@ -1,4 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from './node_modules/@supabase/supabase-js/dist/main.mjs'; // Update the path as needed
+
 
 const supabaseUrl = 'https://bmwakvshdrvwvrtwmyzc.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtd2FrdnNoZHJ2d3ZydHdteXpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTIzNzIwMjksImV4cCI6MjAwNzk0ODAyOX0.DrhLWSMvVPkVkl9MWlMewNkDcox6gu4_tWzP6BrC8pA';
